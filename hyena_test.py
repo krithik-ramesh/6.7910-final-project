@@ -68,47 +68,41 @@ def visualize_token_attributions(attributions, token_list):
     # Ensure attributions is a 2D tensor by summing across the embedding dimension
     if attributions.ndim == 3:
         attributions = attributions.sum(dim=-1)
-        
+
     # Convert attributions to numpy for visualization
     attributions_np = attributions.cpu().detach().numpy()
 
     # Determine the size of the largest dimension
-    max_length = max(attributions_np.shape[1], len(token_list))  # assuming shape[0] is batch size
-    
+    max_length = max(attributions_np.shape[1], len(token_list))
+
     # Initialize a square matrix filled with zeros
     square_matrix = np.zeros((max_length, max_length))
-    
-    # Fill the part of the square matrix with actual attribution scores
-    # Assuming attributions_np is of shape (batch_size, num_tokens)
-    for i in range(min(max_length, attributions_np.shape[1])):
-        square_matrix[i, :min(max_length, attributions_np.shape[1])] = attributions_np[0, :]
 
-    fig, ax = plt.subplots(figsize=(10, 10))  # Set to a square figure size
+    # Fill the part of the square matrix with actual attribution scores
+    square_matrix[:attributions_np.shape[1], :attributions_np.shape[1]] = attributions_np[0]
+
+    fig, ax = plt.subplots(figsize=(20, 20))
 
     # Create a heatmap of token attributions
-    im = ax.matshow(square_matrix, cmap='viridis', vmax=np.max(square_matrix), vmin=np.min(square_matrix))
-
-    fontdict = {'fontsize': 10}  # Adjust font size as necessary
+    im = ax.matshow(square_matrix, cmap='viridis')
 
     # Set ticks and labels
-    ax.set_xticks(range(len(token_list)))
-    ax.set_yticks(range(len(token_list)))
-    ax.set_xticklabels(token_list, fontdict=fontdict, rotation=90)
-    ax.set_yticklabels(token_list, fontdict=fontdict)
+    tick_positions = np.linspace(0, len(token_list) - 1, num=50, dtype=int)  # Only 50 evenly spaced tick positions
+    ax.set_xticks(tick_positions)
+    ax.set_yticks(tick_positions)
+    ax.set_xticklabels(np.array(token_list)[tick_positions], rotation=90, fontsize=8)
+    ax.set_yticklabels(np.array(token_list)[tick_positions], fontsize=8)
 
     # Add colorbar to the heatmap
     cbar = fig.colorbar(im, fraction=0.046, pad=0.04)
-    cbar.ax.tick_params(labelsize=10)  # Adjust to match font size of ticks
+    cbar.ax.tick_params(labelsize=10)
 
     plt.xlabel('Tokens')
     plt.ylabel('Tokens')
     plt.tight_layout()
     plt.show()
-
-# Get the list of tokens from input_ids
 all_tokens = [tokenizer.decode([token_id]) for token_id in input_ids[0].tolist()]
-
 # Assuming attributions is the tensor you got from Layer Integrated Gradients
-# Make sure to select a single example (e.g., index 0) if you're working with batches
-# Use the visualization function
+# Assuming all_tokens is the list of tokens corresponding to input_ids
 visualize_token_attributions(attributions[0], all_tokens)
+
